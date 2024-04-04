@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import shutil
 import time
+import tqdm
 import _pickle as cp
 import sys
 from astropy.stats import median_absolute_deviation
@@ -352,16 +353,16 @@ def IGTD_absolute_error(source, target, max_step=30000, switch_t=0, val_step=300
 
         pre_err = err
 
-    index_record = index_record[:len(err_record), :].astype(np.int)
+    # index_record = index_record[:len(err_record), :].astype(np.int)
+    index_record = index_record[:len(err_record), :].astype(int)
     if save_folder is not None:
         pd.DataFrame(index_record).to_csv(save_folder + '/' + file_name + '_index.txt', header=False, index=False,
-            sep='\t', line_terminator='\r\n')
+            sep='\t')
         pd.DataFrame(np.transpose(np.vstack((err_record, np.array(range(s + 2))))),
             columns=['error', 'steps']).to_csv(save_folder + '/' + file_name + '_error_and_step.txt',
-            header=True, index=False, sep='\t', line_terminator='\r\n')
+            header=True, index=False, sep='\t')
         pd.DataFrame(np.transpose(np.vstack((err_record, run_time))), columns=['error', 'run_time']).to_csv(
-            save_folder + '/' + file_name + '_error_and_time.txt', header=True, index=False, sep='\t',
-            line_terminator='\r\n')
+            save_folder + '/' + file_name + '_error_and_time.txt', header=True, index=False, sep='\t')
 
     return index_record, err_record, run_time
 
@@ -523,13 +524,12 @@ def IGTD_square_error(source, target, max_step=30000, switch_t=0, val_step=300, 
     index_record = index_record[:len(err_record), :].astype(np.int)
     if save_folder is not None:
         pd.DataFrame(index_record).to_csv(save_folder + '/' + file_name + '_index.txt', header=False, index=False,
-            sep='\t', line_terminator='\r\n')
+            sep='\t')
         pd.DataFrame(np.transpose(np.vstack((err_record, np.array(range(s + 2))))),
             columns=['error', 'steps']).to_csv(save_folder + '/' + file_name + '_error_and_step.txt',
-            header=True, index=False, sep='\t', line_terminator='\r\n')
+            header=True, index=False, sep='\t')
         pd.DataFrame(np.transpose(np.vstack((err_record, run_time))), columns=['error', 'run_time']).to_csv(
-            save_folder + '/' + file_name + '_error_and_time.txt', header=True, index=False, sep='\t',
-            line_terminator='\r\n')
+            save_folder + '/' + file_name + '_error_and_time.txt', header=True, index=False, sep='\t')
 
     return index_record, err_record, run_time
 
@@ -576,7 +576,7 @@ def generate_image_data(data, index, num_row, num_column, coord, image_folder=No
     '''
 
     if isinstance(data, pd.DataFrame):
-        samples = data.index.map(np.str)
+        samples = data.index.map(str)
         data = data.values
     else:
         samples = [str(i) for i in range(data.shape[0])]
@@ -606,15 +606,19 @@ def generate_image_data(data, index, num_row, num_column, coord, image_folder=No
         image_data[:, :, i] = 255 - image_data[:, :, i] # High values in the array format of image data correspond
                                                         # to high values in tabular data
         if image_folder is not None:
+            # # Resize the image data to 32x32 pixels
+            # resized_data = np.array(Image.fromarray(data_i).resize((32, 32), Image.Resampling.LANCZOS))
+            # fig = plt.figure(figsize=(1, 1))
             fig = plt.figure()
             plt.imshow(data_i, cmap='gray', vmin=0, vmax=255)
             plt.axis('scaled')
+            plt.axis('off')
             plt.savefig(fname=image_folder + '/' + file_name + '_' + samples[i] + '_image.png', bbox_inches='tight',
                         pad_inches=0)
             plt.close(fig)
 
             pd.DataFrame(image_data[:, :, i], index=None, columns=None).to_csv(image_folder + '/' + file_name + '_'
-                + samples[i] + '_data.txt', header=None, index=None, sep='\t', line_terminator='\r\n')
+                + samples[i] + '_data.txt', header=None, index=None, sep='\t')
 
     return image_data, samples
 
@@ -679,6 +683,7 @@ def table_to_image(norm_d, scale, fea_dist_method, image_dist_method, save_image
     ranking_feature, corr = generate_feature_distance_ranking(data=norm_d, method=fea_dist_method)
     fig = plt.figure(figsize=(save_image_size, save_image_size))
     plt.imshow(np.max(ranking_feature) - ranking_feature, cmap='gray', interpolation='nearest')
+    # plt.axis('off')
     plt.savefig(fname=normDir + '/original_feature_ranking.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
@@ -686,6 +691,7 @@ def table_to_image(norm_d, scale, fea_dist_method, image_dist_method, save_image
                                                                  method=image_dist_method, num=norm_d.shape[1])
     fig = plt.figure(figsize=(save_image_size, save_image_size))
     plt.imshow(np.max(ranking_image) - ranking_image, cmap='gray', interpolation='nearest')
+    # plt.axis('off')
     plt.savefig(fname=normDir + '/image_ranking.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
@@ -695,10 +701,12 @@ def table_to_image(norm_d, scale, fea_dist_method, image_dist_method, save_image
 
     fig = plt.figure()
     plt.plot(time, err)
+    # plt.axis('off')
     plt.savefig(fname=normDir + '/error_and_runtime.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     fig = plt.figure()
     plt.plot(range(len(err)), err)
+    # plt.axis('off')
     plt.savefig(fname=normDir + '/error_and_iteration.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     min_id = np.argmin(err)
@@ -708,6 +716,7 @@ def table_to_image(norm_d, scale, fea_dist_method, image_dist_method, save_image
     fig = plt.figure(figsize=(save_image_size, save_image_size))
     plt.imshow(np.max(ranking_feature_random) - ranking_feature_random, cmap='gray',
                interpolation='nearest')
+    # plt.axis('off')
     plt.savefig(fname=normDir + '/optimized_feature_ranking.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
@@ -803,13 +812,13 @@ def multi_generate_image_data(data_list, index, num_row, num_column, coord, imag
                 fig = plt.figure()
                 plt.imshow(data_i, cmap='gray', vmin=0, vmax=255)
                 plt.axis('scaled')
+                plt.axis('off')
                 plt.savefig(fname=image_folder + '/' + file_name + '_' + samples[i] + '_image_channel_' + str(j) +
                                   '.png', bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
 
                 pd.DataFrame(image_data[j, :, :, i], index=None, columns=None).to_csv(image_folder + '/' + file_name +
-                    '_' + samples[i] + '_data_channel_' + str(j) + '.txt', header=None, index=None, sep='\t',
-                    line_terminator='\r\n')
+                    '_' + samples[i] + '_data_channel_' + str(j) + '.txt', header=None, index=None, sep='\t')
 
     return image_data, samples
 
@@ -893,6 +902,7 @@ def multi_table_to_image(norm_d_list, weight_list, fea_dist_method_list, scale, 
         corr_list.append(b)
         fig = plt.figure(figsize=(save_image_size, save_image_size))
         plt.imshow(np.max(ranking_feature_list[i]) - ranking_feature_list[i], cmap='gray', interpolation='nearest')
+        plt.axis('off')
         plt.savefig(fname=normDir + '/original_feature_ranking_channel_' + str(i) + '.png', bbox_inches='tight',
                     pad_inches=0)
         plt.close(fig)
@@ -902,6 +912,7 @@ def multi_table_to_image(norm_d_list, weight_list, fea_dist_method_list, scale, 
         ranking_feature = ranking_feature + ranking_feature_list[i] * weight_list[i]
     fig = plt.figure(figsize=(save_image_size, save_image_size))
     plt.imshow(np.max(ranking_feature) - ranking_feature, cmap='gray', interpolation='nearest')
+    plt.axis('off')
     plt.savefig(fname=normDir + '/original_feature_ranking.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
@@ -909,6 +920,7 @@ def multi_table_to_image(norm_d_list, weight_list, fea_dist_method_list, scale, 
                                                                  method=image_dist_method, num=norm_d_list[0].shape[1])
     fig = plt.figure(figsize=(save_image_size, save_image_size))
     plt.imshow(np.max(ranking_image) - ranking_image, cmap='gray', interpolation='nearest')
+    plt.axis('off')
     plt.savefig(fname=normDir + '/image_ranking.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
@@ -918,10 +930,12 @@ def multi_table_to_image(norm_d_list, weight_list, fea_dist_method_list, scale, 
 
     fig = plt.figure()
     plt.plot(time, err)
+    plt.axis('off')
     plt.savefig(fname=normDir + '/error_and_runtime.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     fig = plt.figure()
     plt.plot(range(len(err)), err)
+    plt.axis('off')
     plt.savefig(fname=normDir + '/error_and_iteration.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     min_id = np.argmin(err)
@@ -931,6 +945,7 @@ def multi_table_to_image(norm_d_list, weight_list, fea_dist_method_list, scale, 
     fig = plt.figure(figsize=(save_image_size, save_image_size))
     plt.imshow(np.max(ranking_feature_random) - ranking_feature_random, cmap='gray',
                interpolation='nearest')
+    plt.axis('off')
     plt.savefig(fname=normDir + '/optimized_feature_ranking.png', bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
