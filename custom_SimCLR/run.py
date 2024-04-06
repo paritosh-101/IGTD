@@ -81,15 +81,26 @@ def main():
     else:
         model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim, grayscale=False)
 
+    # Use >1 GPU if available
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = torch.nn.DataParallel(model)
+
+    model = model.to(args.device)
+
     optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                            last_epoch=-1)
+    
+    # Multi-GPU training
+    simclr = SimCLR(model=model, optimizer=optimizer, scheduler=scheduler, args=args)
+    simclr.train(train_loader)
 
-    #  It’s a no-op if the 'gpu_index' argument is a negative integer or None.
-    with torch.cuda.device(args.gpu_index):
-        simclr = SimCLR(model=model, optimizer=optimizer, scheduler=scheduler, args=args)
-        simclr.train(train_loader)
+    # #  It’s a no-op if the 'gpu_index' argument is a negative integer or None.
+    # with torch.cuda.device(args.gpu_index):
+    #     simclr = SimCLR(model=model, optimizer=optimizer, scheduler=scheduler, args=args)
+    #     simclr.train(train_loader)
 
 
 if __name__ == "__main__":
