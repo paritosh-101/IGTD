@@ -98,7 +98,8 @@ class SimCLR(object):
             logging.info(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")
 
             if (epoch_counter + 1) % 100 == 0:
-                checkpoint_name = f'checkpoint_{epoch_counter + 1:04d}.pth.tar'
+                model_name = self.args.arch.lower()  # Retrieve the model name from self.args.arch
+                checkpoint_name = f'checkpoint_{model_name}_{epoch_counter + 1:04d}.pth.tar'
                 save_checkpoint({
                     'epoch': epoch_counter + 1,
                     'arch': self.args.arch,
@@ -109,7 +110,8 @@ class SimCLR(object):
 
         logging.info("Training has finished.")
         # save model checkpoints
-        checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(self.args.epochs)
+        model_name = self.args.arch.lower()  # Retrieve the model name from self.args.arch
+        checkpoint_name = f'checkpoint_{model_name}_{self.args.epochs:04d}.pth.tar'
         save_checkpoint({
             'epoch': self.args.epochs,
             'arch': self.args.arch,
@@ -117,3 +119,24 @@ class SimCLR(object):
             'optimizer': self.optimizer.state_dict(),
         }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
         logging.info(f"Final model checkpoint and metadata has been saved at {self.writer.log_dir}.")
+
+        #     if (epoch_counter + 1) % 100 == 0:
+        #         checkpoint_name = f'checkpoint_{epoch_counter + 1:04d}.pth.tar'
+        #         save_checkpoint({
+        #             'epoch': epoch_counter + 1,
+        #             'arch': self.args.arch,
+        #             'state_dict': self.model.state_dict(),
+        #             'optimizer': self.optimizer.state_dict(),
+        #         }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+        #         logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
+
+        # logging.info("Training has finished.")
+        # # save model checkpoints
+        # checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(self.args.epochs)
+        # save_checkpoint({
+        #     'epoch': self.args.epochs,
+        #     'arch': self.args.arch,
+        #     'state_dict': self.model.state_dict(),
+        #     'optimizer': self.optimizer.state_dict(),
+        # }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+        # logging.info(f"Final model checkpoint and metadata has been saved at {self.writer.log_dir}.")
