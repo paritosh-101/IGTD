@@ -104,7 +104,7 @@ class RandomRowMask:
         return Image.fromarray(masked_img_array)
     
 class ContrastiveLearningDataset:
-    def __init__(self, root_folder, crop_size=48):
+    def __init__(self, root_folder, crop_size=224):
         self.root_folder = root_folder
         self.crop_size = crop_size
 
@@ -123,12 +123,15 @@ class ContrastiveLearningDataset:
     # @staticmethod
     def get_simclr_pipeline_transform(self, s=1, is_grayscale=False):
         """Return a set of data augmentation transformations as described in the SimCLR paper."""
-        # transformations = [RandomMaskPatches(image_size=32)]
-        transformations = [
-            RandomRowShuffle(image_size=self.crop_size),
-            RandomRowFlip(p=0.5),
-            RandomRowMask(min_mask_ratio=0.2, max_mask_ratio=0.5)
-        ]
+        transformations = [RandomMaskPatches(image_size=32),
+                           transforms.RandomResizedCrop(size=self.crop_size),
+                           transforms.RandomHorizontalFlip(),
+                           GaussianBlur(kernel_size=int(0.1 * self.crop_size))]
+        # transformations = [
+        #     RandomRowShuffle(image_size=self.crop_size),
+        #     RandomRowFlip(p=0.5),
+        #     RandomRowMask(min_mask_ratio=0.2, max_mask_ratio=0.5)
+        # ]
 
         if not is_grayscale:
             # Color jitter only for RGB images
@@ -168,6 +171,7 @@ class ContrastiveLearningDataset:
                             'custom_grayscale': lambda: ImageFolder(
                                 self.root_folder,
                                 transform=transforms.Compose([
+                                    transforms.Resize((self.crop_size, self.crop_size)),
                                     Grayscale(num_output_channels=1),
                                     ContrastiveLearningViewGenerator(
                                         self.get_simclr_pipeline_transform(is_grayscale=True),  # Adjust size as needed
